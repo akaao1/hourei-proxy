@@ -1,6 +1,8 @@
 // 駐車場法の法令IDを取得
 async function getLawId() {
-  const url = "https://laws.e-gov.go.jp/api/1/lawlists/2"; // 憲法・法律
+  document.getElementById("result").textContent = "🔄 駐車場法の法令IDを取得中...";
+
+  const url = "https://laws.e-gov.go.jp/api/1/lawlists/2";
 
   try {
     const response = await fetch(url);
@@ -39,7 +41,9 @@ async function getLawId() {
 
 // 駐車場法の全文を取得
 async function getLawFullText() {
-  const lawId = "415AC0000000108"; // 駐車場法の法令ID（事前取得済み）
+  document.getElementById("result").textContent = "🔄 駐車場法の全文を取得中...";
+
+  const lawId = "415AC0000000108";
   const url = `https://laws.e-gov.go.jp/api/1/lawdata/${lawId}`;
 
   try {
@@ -66,6 +70,8 @@ async function getLawFullText() {
 
 // 駐車場法の第1条を取得
 async function getLawArticle() {
+  document.getElementById("result").textContent = "🔄 駐車場法 第1条を取得中...";
+
   const lawId = "415AC0000000108";
   const article = "第1条";
   const url = `https://laws.e-gov.go.jp/api/1/articles;lawId=${lawId};article=${encodeURIComponent(article)}`;
@@ -94,6 +100,8 @@ async function getLawArticle() {
 
 // 第1条と更新情報を取得
 async function getLawArticleWithUpdateCheck() {
+  document.getElementById("result").textContent = "🔄 第1条と更新情報を取得中...";
+
   const lawId = "415AC0000000108";
   const article = "第1条";
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -127,4 +135,3 @@ async function getLawArticleWithUpdateCheck() {
     document.getElementById("result").textContent = `❌ エラー: ${error.message}`;
   }
 }
-``
