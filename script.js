@@ -1,136 +1,51 @@
-// 駐車場法の法令IDを取得
-async function getLawId() {
-  document.getElementById("result").textContent = "🔄 駐車場法の法令IDを取得中...";
+async function getFullLawIfNoUpdate() {
+  document.getElementById("result").textContent = "🔄 更新情報を確認中...";
 
-  const url = "https://laws.e-gov.go.jp/api/1/lawlists/2";
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      document.getElementById("result").textContent = `❌ APIリクエスト失敗: ステータスコード ${response.status}`;
-      return;
-    }
-
-    const xmlText = await response.text();
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, "application/xml");
-
-    const lawInfos = xmlDoc.getElementsByTagName("LawNameListInfo");
-    let found = false;
-
-    for (let i = 0; i < lawInfos.length; i++) {
-      const lawName = lawInfos[i].getElementsByTagName("LawName")[0]?.textContent;
-      const lawId = lawInfos[i].getElementsByTagName("LawId")[0]?.textContent;
-      const lawNo = lawInfos[i].getElementsByTagName("LawNo")[0]?.textContent;
-
-      if (lawName && lawName.includes("駐車場法")) {
-        document.getElementById("result").textContent =
-          `✅ 駐車場法が見つかりました！\n法令名: ${lawName}\n法令ID: ${lawId}\n法令番号: ${lawNo}`;
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      document.getElementById("result").textContent = "❌ 駐車場法は見つかりませんでした。";
-    }
-  } catch (error) {
-    document.getElementById("result").textContent = `❌ エラー: ${error.message}`;
-  }
-}
-
-// 駐車場法の全文を取得
-async function getLawFullText() {
-  document.getElementById("result").textContent = "🔄 駐車場法の全文を取得中...";
-
-  const lawId = "415AC0000000108";
-  const url = `https://laws.e-gov.go.jp/api/1/lawdata/${lawId}`;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      document.getElementById("result").textContent = `❌ APIリクエスト失敗: ステータスコード ${response.status}`;
-      return;
-    }
-
-    const xmlText = await response.text();
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, "application/xml");
-
-    const lawText = xmlDoc.getElementsByTagName("LawFullText")[0]?.textContent;
-    if (lawText) {
-      document.getElementById("result").textContent = `📘 駐車場法の全文:\n\n${lawText}`;
-    } else {
-      document.getElementById("result").textContent = "❌ 法令本文が取得できませんでした。";
-    }
-  } catch (error) {
-    document.getElementById("result").textContent = `❌ エラー: ${error.message}`;
-  }
-}
-
-// 駐車場法の第1条を取得
-async function getLawArticle() {
-  document.getElementById("result").textContent = "🔄 駐車場法 第1条を取得中...";
-
-  const lawId = "415AC0000000108";
-  const article = "第1条";
-  const url = `https://laws.e-gov.go.jp/api/1/articles;lawId=${lawId};article=${encodeURIComponent(article)}`;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      document.getElementById("result").textContent = `❌ APIリクエスト失敗: ステータスコード ${response.status}`;
-      return;
-    }
-
-    const xmlText = await response.text();
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, "application/xml");
-
-    const lawContents = xmlDoc.getElementsByTagName("LawContents")[0]?.textContent;
-    if (lawContents) {
-      document.getElementById("result").textContent = `📘 駐車場法 第1条:\n\n${lawContents}`;
-    } else {
-      document.getElementById("result").textContent = "❌ 条文が取得できませんでした。";
-    }
-  } catch (error) {
-    document.getElementById("result").textContent = `❌ エラー: ${error.message}`;
-  }
-}
-
-// 第1条と更新情報を取得
-async function getLawArticleWithUpdateCheck() {
-  document.getElementById("result").textContent = "🔄 第1条と更新情報を取得中...";
-
-  const lawId = "415AC0000000108";
-  const article = "第1条";
+  const lawId = "415AC0000000108"; // 駐車場法の法令ID
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const updateUrl = `https://laws.e-gov.go.jp/api/1/updatelawlists/${today}`;
-  const articleUrl = `https://laws.e-gov.go.jp/api/1/articles;lawId=${lawId};article=${encodeURIComponent(article)}`;
+  const fullTextUrl = `https://laws.e-gov.go.jp/api/1/lawdata/${lawId}`;
 
   try {
-    const articleRes = await fetch(articleUrl);
-    const articleText = await articleRes.text();
-    const articleDoc = new DOMParser().parseFromString(articleText, "application/xml");
-    const lawContents = articleDoc.getElementsByTagName("LawContents")[0]?.textContent || "❌ 条文が取得できませんでした。";
-
+    // 更新情報の取得
     const updateRes = await fetch(updateUrl);
     const updateText = await updateRes.text();
     const updateDoc = new DOMParser().parseFromString(updateText, "application/xml");
     const updates = updateDoc.getElementsByTagName("LawNameListInfo");
 
-    let updateInfo = "📅 本日付の更新はありません。";
+    let isUpdated = false;
     for (let i = 0; i < updates.length; i++) {
       const id = updates[i].getElementsByTagName("LawId")[0]?.textContent;
       if (id === lawId) {
+        isUpdated = true;
         const amendName = updates[i].getElementsByTagName("AmendName")[0]?.textContent || "不明";
         const amendDate = updates[i].getElementsByTagName("AmendPromulgationDate")[0]?.textContent || "不明";
-        updateInfo = `📌 更新あり：\n改正法令名: ${amendName}\n公布日: ${amendDate}`;
+        document.getElementById("result").textContent =
+          `📌 駐車場法は本日更新されています。\n改正法令名: ${amendName}\n公布日: ${amendDate}`;
         break;
       }
     }
 
-    document.getElementById("result").textContent = `📘 駐車場法 第1条:\n\n${lawContents}\n\n${updateInfo}`;
+    // 更新がなければ全文取得
+    if (!isUpdated) {
+      document.getElementById("result").textContent = "🔄 更新はありません。全文を取得中...";
+
+      const fullRes = await fetch(fullTextUrl);
+      if (!fullRes.ok) {
+        document.getElementById("result").textContent = `❌ 法令全文取得失敗: ステータスコード ${fullRes.status}`;
+        return;
+      }
+
+      const fullText = await fullRes.text();
+      const fullDoc = new DOMParser().parseFromString(fullText, "application/xml");
+      const lawText = fullDoc.getElementsByTagName("LawFullText")[0]?.textContent;
+
+      if (lawText) {
+        document.getElementById("result").textContent = `📘 駐車場法の全文:\n\n${lawText}`;
+      } else {
+        document.getElementById("result").textContent = "❌ 法令本文が取得できませんでした。";
+      }
+    }
   } catch (error) {
     document.getElementById("result").textContent = `❌ エラー: ${error.message}`;
   }
