@@ -127,3 +127,4 @@ async function getLawArticleWithUpdateCheck() {
     document.getElementById("result").textContent = `❌ エラー: ${error.message}`;
   }
 }
+``
