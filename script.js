@@ -1,5 +1,8 @@
-async function getLawId() {
-  const url = "https://laws.e-gov.go.jp/api/1/lawlists/2"; // 憲法・法律
+async function getLawArticle() {
+  // 駐車場法の法令ID（例：415AC0000000108）※事前に取得済みであること
+  const lawId = "415AC0000000108";
+  const article = "第1条"; // 取得したい条
+  const url = `https://laws.e-gov.go.jp/api/1/articles;lawId=${lawId};article=${encodeURIComponent(article)}`;
 
   try {
     const response = await fetch(url);
@@ -12,27 +15,13 @@ async function getLawId() {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlText, "application/xml");
 
-    const lawInfos = xmlDoc.getElementsByTagName("LawNameListInfo");
-    let found = false;
-
-    for (let i = 0; i < lawInfos.length; i++) {
-      const lawName = lawInfos[i].getElementsByTagName("LawName")[0]?.textContent;
-      const lawId = lawInfos[i].getElementsByTagName("LawId")[0]?.textContent;
-      const lawNo = lawInfos[i].getElementsByTagName("LawNo")[0]?.textContent;
-
-      if (lawName && lawName.includes("駐車場法")) {
-        document.getElementById("result").textContent =
-          `✅ 駐車場法が見つかりました！\n法令名: ${lawName}\n法令ID: ${lawId}\n法令番号: ${lawNo}`;
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      document.getElementById("result").textContent = "❌ 駐車場法は見つかりませんでした。";
+    const lawContents = xmlDoc.getElementsByTagName("LawContents")[0]?.textContent;
+    if (lawContents) {
+      document.getElementById("result").textContent = `📘 駐車場法 第1条:\n\n${lawContents}`;
+    } else {
+      document.getElementById("result").textContent = "❌ 条文が取得できませんでした。";
     }
   } catch (error) {
     document.getElementById("result").textContent = `❌ エラー: ${error.message}`;
   }
 }
-``
