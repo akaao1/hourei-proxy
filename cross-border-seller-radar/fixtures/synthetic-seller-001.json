@@ -1,0 +1,50 @@
+{
+  "fixture_type": "SYNTHETIC_ONLY",
+  "seller": {
+    "alias": "Northstar Home Goods (Synthetic)",
+    "country": "JP",
+    "model": "Japanese cross-border marketplace seller",
+    "note": "Fictional seller created only for deterministic pilot and UI testing. No real company or customer data."
+  },
+  "sources": [
+    {
+      "label": "CPSC Business Guidance — Certificates",
+      "url": "https://www.cpsc.gov/Business--Manufacturing/Business-Education/Business-Guidance/Certificates",
+      "official_domain": "cpsc.gov",
+      "enabled": true,
+      "fixture_change_mode": "controlled"
+    }
+  ],
+  "skus": [
+    {
+      "sku": "NS-LAMP-001",
+      "product_name": "LED Desk Lamp 12W",
+      "destination": "US",
+      "hs_code": "9405.20",
+      "category": "lighting",
+      "matching_terms": ["led desk lamp", "desk lamp", "12w lamp", "ns-lamp-001"]
+    },
+    {
+      "sku": "NS-USB-002",
+      "product_name": "USB-C 65W Power Adapter",
+      "destination": "US",
+      "hs_code": "8504.40",
+      "category": "power adapter",
+      "matching_terms": ["usb-c 65w", "power adapter", "usb c adapter", "ns-usb-002"]
+    },
+    {
+      "sku": "NS-HOME-003",
+      "product_name": "Rechargeable Household Fan",
+      "destination": "US",
+      "hs_code": "8414.59",
+      "category": "small appliance",
+      "matching_terms": ["rechargeable fan", "household fan", "portable fan", "ns-home-003"]
+    }
+  ],
+  "pilot_expectation": {
+    "baseline": "Create source state without producing an alert.",
+    "changed_source": "A controlled fixture change should produce UPDATED and then REVIEW_REQUIRED for a matching SKU.",
+    "failure": "A forced fetch/processing failure must produce FETCH_ERROR and remain retryable.",
+    "human_action": "Synthetic action records are test-only and must never be counted as commercial validation."
+  }
+}
