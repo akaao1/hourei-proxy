@@ -13,6 +13,25 @@ function normalize(input: string) {
     .toLowerCase();
 }
 
+function assertSafeFinalUrl(value: string) {
+  const parsed = new URL(value);
+  if (parsed.protocol !== 'https:') throw new Error('NON_HTTPS_FINAL_URL');
+  const hostname = parsed.hostname.toLowerCase();
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.local') ||
+    /^10\./.test(hostname) ||
+    /^192\.168\./.test(hostname) ||
+    /^169\.254\./.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
+  ) {
+    throw new Error('PRIVATE_OR_LOCAL_FINAL_URL');
+  }
+}
+
 async function sha256(input: string) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
   return Array.from(new Uint8Array(bytes))
@@ -54,7 +73,10 @@ export async function GET(request: Request) {
     const started = Date.now();
 
     try {
-      const response = await fetch(source.url, {
+      const requestedUrl = new URL(source.url);
+      if (requestedUrl.protocol !== 'https:') throw new Error('NON_HTTPS_SOURCE_URL');
+
+      const response = await fetch(requestedUrl, {
         redirect: 'follow',
         headers: { 'user-agent': 'Cross-Border-Seller-Radar/0.3' },
         cache: 'no-store',
@@ -63,12 +85,14 @@ export async function GET(request: Request) {
       if (!response.ok) throw new Error(`HTTP_${response.status}`);
 
       const finalUrl = response.url;
-      if (!finalUrl.startsWith('https://')) throw new Error('NON_HTTPS_FINAL_URL');
+      assertSafeFinalUrl(finalUrl);
 
       const text = await response.text();
       if (!text.trim()) throw new Error('EMPTY_SOURCE');
+      if (text.length > 10_000_000) throw new Error('SOURCE_TOO_LARGE');
 
       const normalized = normalize(text);
+      if (!normalized) throw new Error('EMPTY_NORMALIZED_SOURCE');
       const hash = await sha256(normalized);
 
       const [{ data: previous, error: previousError }, { data: skus, error: skuError }] =
@@ -91,21 +115,23 @@ export async function GET(request: Request) {
 
       if (status === 'UPDATED') {
         const matches = (skus ?? [])
-          .flatMap((sku) =>
-            (sku.matching_terms ?? [])
-              .filter((term: string) => normalized.includes(term.toLowerCase()))
-              .map((term: string) => ({ sku, term })),
-          );
+          .map((sku) => ({
+            sku,
+            terms: (sku.matching_terms ?? []).filter((term: string) =>
+              normalized.includes(term.toLowerCase()),
+            ),
+          }))
+          .filter(({ terms }) => terms.length > 0);
 
         if (matches.length > 0) {
           const { error: reviewError } = await supabase.from('review_events').insert(
-            matches.map(({ sku, term }) => ({
+            matches.map(({ sku, terms }) => ({
               seller_id: source.seller_id,
               source_id: source.id,
               sku_id: sku.id,
               status: 'REVIEW_REQUIRED',
               evidence_url: finalUrl,
-              matched_terms: [term],
+              matched_terms: terms,
             })),
           );
           if (reviewError) throw new Error(`REVIEW_EVENT_FAILED: ${reviewError.message}`);
